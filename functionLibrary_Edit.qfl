@@ -1163,10 +1163,11 @@ Function GeneralVerify(ByVal observed, ByVal operator, ByVal expected)
 End Function
 
 Function browserSync(objControl)
-	getBrowserCount = objControl.Count
-'	msgBox "Browser Count is " & getBrowserCount
-	objControl(getBrowserCount-1).Sync
-	wait(5)
+	
+	While objControl.Object.readyState <> "complete"
+		objControl.Sync
+	Wend
+	
 End Function
 
 Function keyStroke(strValue)
@@ -1182,6 +1183,8 @@ Function keyStroke(strValue)
 		mySendKeys.SendKeys("{RIGHT}")
 	ElseIf strValue = "ENTER" Then
 		mySendKeys.SendKeys("{ENTER}")
+	ElseIf strValue = "F7" Then
+		mySendKeys.SendKeys("{F7}")
 	End If
 	
 End Function
@@ -1197,10 +1200,20 @@ End Function
 
 Function closeAllBrowsers
 
-	count = getCount
-	For i = count-1 To 0 Step -1
-		Browser("CreationTime:=0").Close
+	Dim oBrDes
+	Dim oBrObjList
+	Dim objIndex
+	
+	Set oBrDes = Description.Create
+	oBrDes("micclass").Value = "Browser"
+	Set oBrObjList = Desktop.ChildObjects(oBrDes)
+	
+	For objIndex=0 To oBrObjList.count-1 
+		oBrObjList(objIndex).Close
 	Next
+	
+	Set oBrObjList=Nothing
+	Set oBrDes=Nothing
 	
 End Function
 
@@ -1208,7 +1221,7 @@ Function waitforObjectProperty(objControl)
 	
 	iterator=10
 	For i = 1 To iterator
-		If objControl.WaitProperty("visible",-1,5000) Then
+		If objControl.WaitProperty("visible",True,5000) Then
 			msgbox "Here"
 			waitforObjectProperty=1
 			Exit For
@@ -1628,7 +1641,19 @@ Function getSTatusBartext(objControl, propertyName)
 	statusBarText = objControl.GetROProperty(propertyName)
 End Function
 
+Function checkforcharsinString(strValue)
 
+	Set re = New RegExp
+	re.Pattern = "[a-z]"
+	re.IgnoreCase = True
+	re.Global = True
+	hasMatches = re.Test(strValue)
+	
+	If hasMatches = True Then
+		numberArr = getNumbersFromString(strValue)
+	End If
+	
+End Function
 
 Function verifyIsEmpty(strValue)
     
@@ -1638,6 +1663,25 @@ Function verifyIsEmpty(strValue)
             verifyIsEmpty = 0
         Else
             actualResult = "Print Packing failed. Spool Number is not generated."
+            verifyIsEmpty = 1
+        End If
+	
+    ElseIf strValue = "Baseline Date" Then
+        If IsEmpty(baselineDate) Then
+            actualResult = "Baseline Date field empty. Invoicing not successful."
+            verifyIsEmpty = 0
+        Else
+            actualResult = "Baseline Date = " & baselineDate
+            verifyIsEmpty = 1
+        End If
+    End If
+    
+    ElseIf strValue = "Payment Terms" Then
+        If IsEmpty(pmntTerms) Then
+            actualResult = "Payment Terms field empty. Invoicing not successful."
+            verifyIsEmpty = 0
+        Else
+            actualResult = "Payment Terms = " & pmntTerms
             verifyIsEmpty = 1
         End If
     End If
@@ -1793,21 +1837,18 @@ Function updateValue(strValue)
 		If IsNumeric(stockOverviewItem) Then
         	updatedreceivedOnDockQty = CInt(stockOverviewItem)-1
         	msgbox updatedreceivedOnDockQty
-        End If
 	
 	ElseIf (strValue = "Free Stock") Then
 	
 		If IsNumeric(stockOverviewItem) Then
         	updatedFreeStockQty = CInt(stockOverviewItem)+1
         	msgbox updatedFreeStockQty
-        End If
         
-    ElseIf (strValue = "SYK Corp Allendale") Then
+    	ElseIf (strValue = "SYK Corp Allendale") Then
 	
 		If IsNumeric(stockOverviewItem) Then
         	updatedSykCorpAllendaleQty = CLng(stockOverviewItem)-1
         	msgbox updatedSykCorpAllendaleQty
-        End If
         
 	End If
 	
@@ -1858,7 +1899,7 @@ Function setValueChangeBatch(objControl, allBatchesArr, batchNo)
 	
 	If batchFlag = 1 Then
 		arrData(0) = changeBatchval
-		Call sendKeys(control_object, arrData)
+		Call sendKeys(objControl, arrData)
 		
 	Else
 		msgbox "Batch array does not contain Batch numbers or only contains 1 batch number."
@@ -1867,9 +1908,31 @@ Function setValueChangeBatch(objControl, allBatchesArr, batchNo)
 	
 End Function
 
+Function doubleClick(objControl)
 
+	Setting.WebPackage("ReplayType") = 2
+	objControl.FireEvent "ondblclick"
+	Setting.WebPackage("ReplayType") = 1
 
+End Function
 
+Function setSystemDate(objControl)
 
+	sysDate = Right("0" & DatePart("d",Date), 2) & "." & Right("0" & DatePart("m",Date), 2) & "." & DatePart("yyyy",Date)
+	arrData(0) = changeBatchval
+	Call sendKeys(objControl, arrData)
+	
+End Function
 
+Function setReferenceNumber(objControl, strValue)
+
+	If strValue = "INV" Then
+		referenceNumber = "INV-" & purchOrderNo
+		msgbox referenceNumber
+	End If
+	arrData(0) = referenceNumber
+	
+	Call sendKeys(objControl,arrData)
+
+End Function
 
