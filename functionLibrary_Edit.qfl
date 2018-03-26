@@ -1,13 +1,13 @@
 
 'Variable Initialization and Declaration
-Dim sExcelLocation
+Dim sExcelLocation, ScreenshotFolderPath
 Dim sParent, sParentProp, arrParent, current_parent, arrParentProp, sControl, sControlProp, arrControlProp, sAction, sDataValue, restart, theRun, arrData, arrNum
 Dim obj_hierarchy, control_object
 Dim objhierarchyArr()
 Dim objhierarchypropArr()
 Dim browserObject
 'Dim testStepStatusFlag
-Dim testStepStatusFlag
+Dim testStepStatusFlag, testCaseStatusFlag
 Dim arrNumbers()
 Dim allBatchesArr(), batchCount, batchFlag, changeBatchval
 Dim sendStepStatustoALM
@@ -37,6 +37,18 @@ Dim inbDeliveryOrder
 Dim woInboundNumber
 Dim spoolNoStr, spoolNoArr, spoolNo
 Dim giStatus
+
+'******PTP Variable Declaration
+Dim numberArr
+Dim docOverviewDate, docOverviewStatus
+Dim purchReqNo, purchReqStr, purchReqArr, purchReqVendor, purchasingOrg, purchOrderNo, inboundDelStr, inboundDelArr, inboundDelNo
+Dim invoiceStr, invoiceArr, invoiceNo
+Dim companyCode, referenceNumber, netPrice, perQuantityPrice, baselineDate, pmntTerms, shortCloseStr
+Dim contractCreationStr, contractArr, contractNumber, sourceLoc
+Dim enabledFlag
+Dim siffIMStr
+'******End of PTP variable declaration
+
 Dim orderNoMeded
 Dim orderNoMededIssue
 Dim orderNoIssue
@@ -60,23 +72,34 @@ Dim blockedSBin, binStockRemovalFlag
 'ScreenshotFolderPath = "C:\Drive E\Automation\Project_Framework_V1\Evidences"
 
 'The below excel path for should be dynamic.
-sExcelLocation = "C:\Users\keshubm\WORK\UFT\Automation Framework\Project_Framework_V2_KS\Organizer\Test_Case.xls"
-ScreenshotFolderPath = "C:\Users\keshubm\WORK\UFT\Automation Framework\Project_Framework_V2_KS\Evidences"
+'sExcelLocation = "C:\Users\keshubm\WORK\UFT\Automation Framework\Project_Framework_V2_KS\Organizer\Test_Case.xls"
+'ScreenshotFolderPath = "C:\Users\keshubm\WORK\UFT\Automation Framework\Project_Framework_V2_KS\Evidences"
+
+Function configureExecutionSheetName(bpmScenarioName)
+	
+	sExcelLocation = "C:\Users\keshubm\WORK\UFT\Automation Framework\Project_Framework_V1_ALMPath\Organizer\" & bpmScenarioName & ".xls"	
+	ScreenshotFolderPath = "C:\Users\keshubm\WORK\UFT\Automation Framework\Project_Framework_V1_ALMPath\Evidences"
+	
+End Function
 
 'Arguments of below function should come from the 'Execution Path' column of the Organizer_New excel for execution in ALM. 
 The column value should be comma separated. Example "Root\Informal Test Cycle\ STP1,Purchase Requisition,48" 
-Function exec_HP_ALM (CY_CYCLE,Test_Case_ID)
+Function exec_HP_ALM (Path, CY_CYCLE,Test_Case_ID)
 
 
 Dim gTDConn
 Set gTDConn = CreateObject("TDApiOle80.TDConnection")
 gTDConn.InitConnectionEx "http://10.50.112.78:8080/qcbin"
 gTDConn.Login "kbansal", "Stryker2025"
-gTDConn.Connect "Stryker", "SAP"
+gTDConn.Connect "Stryker", "Accelerate"
+
+testCaseStatusFlag = 1
 
 Set treeMgr = gTDConn.TestSetTreeManager
 
-Set tstTree = treeMgr.NodeByPath("Root\Automation - Demo")
+'Set tstTree = treeMgr.NodeByPath("Root\Automation - Demo")
+
+Set tstTree = treeMgr.NodeByPath(Path)
 
 Set TestSetF = tstTree.TestSetFactory
 Set aFilter = TestSetF.Filter
@@ -114,7 +137,7 @@ theRun.CopyDesignSteps
 
 End Function
 
-Function execute_step (step_ID, testStepStatusFlag, actualResult)
+Function execute_step (objControl,step_ID, testStepStatusFlag, actualResult)
 
 'If testStepStatusFlag=1 Then
 '	sendStepStatustoALM = "Passed"
@@ -139,6 +162,7 @@ If testStepStatusFlag=1 Then
         sendActualResulttoALM = actualResult
     End If
 Else
+    testCaseStatusFlag = 0
     sendStepStatustoALM = "Failed"
     If actualResult = "" Then
         sendActualResulttoALM = "Step Execution failed."
@@ -163,7 +187,7 @@ fileName = createFilenameTimeStamp(ScreenshotFolderPath)
 Dim attachFactory 'As AttachmentFactory
 Set attachFactory = runStep2.Attachments
 Set attachment = attachFactory.AddItem (Null)
-obj_hierarchy.CaptureBitmap fileName,True
+objControl.CaptureBitmap fileName,True
 attachment.FileName = fileName
 'attachment.Type = TDATT_FILE
 attachment.Type = 1
@@ -174,62 +198,33 @@ runStep2.Field("ST_STATUS") = sendStepStatustoALM
 runStep2.Field("ST_ACTUAL") = sendActualResulttoALM
 runStep2.Post
 
-'Next
-'msgbox step_ID
-'msgbox testStepCount
 
-'If testStepStatusFlag = 1 Then
-'	If CINT(step_ID) = CINT(testStepCount) Then
-'		Call setTestStatus(theRun, testStepStatusFlag)
-'	Else	
-'		testStepStatusFlag=2
-'		Call setTestStatus(theRun, testStepStatusFlag)	
-'	End If
-'Else 
-'	Call setTestStatus(theRun, testStepStatusFlag)
-'End If
-
-If testStepStatusFlag = 1 Then
-	If CINT(step_ID) = CINT(testStepCount) Then
-		Call setTestStatus(theRun, testStepStatusFlag)
-	Else
-		If pgiDoneFlag <> 1  Then
-			testStepStatusFlag=2
-		End If	
-		
-		Call setTestStatus(theRun, testStepStatusFlag)	
-	End If
-Else 
-	Call setTestStatus(theRun, testStepStatusFlag)
+If CINT(step_ID) = CINT(testStepCount) Then
+	Call setTestStatus(theRun, testCaseStatusFlag)
+Else
+	If testCaseStatusFlag=0 Then		
+		Call setTestStatus(theRun, testCaseStatusFlag)		
+	ElseIf testCaseStatusFlag=1 Then		
+		testCaseStatusFlag=2		
+		Call setTestStatus(theRun, testCaseStatusFlag)
+	End If	
 End If
+
 	
 End Function
 
-Function setTestStatus(theRun, testStepStatusFlag)
-
-	'msgbox testStepStatusFlag
-'	If testStepStatusFlag=1 Then
-'		'msgbox "Here"
-'		theRun.Status = "Passed"
-''		theRun.Post
-'		theRun.Post
-'	Else
-'		theRun.Status = "Failed"
-'		theRun.Post
-'		ExitTest
-'	End If
-
+Function setTestStatus(theRun, testCaseStatusFlag)
 	
-	If testStepStatusFlag=1 Then
+	If testCaseStatusFlag=1 Then
 		'msgbox "Here"
 		theRun.Status = "Passed"
 '		theRun.Post
 		theRun.Post
 		
-		If pgiDoneFlag = 1 Then
-			' need to write the code that will append the excel sheet and write END , so that we can come out of the test case .
-		End If
-	ElseIf testStepStatusFlag=0 Then
+'		If pgiDoneFlag = 1 Then
+'			need to write the code that will append the excel sheet and write END , so that we can come out of the test case .
+'		End If
+	ElseIf testCaseStatusFlag=0 Then
 		theRun.Status = "Failed"
 		theRun.Post
 '		ExitTest
@@ -437,24 +432,21 @@ Function fnAction()
 
 		'Perform Action on the control_object based upon the keyword defined in the excel sheet
 		Select Case sAction
-
-'				Case "SetValue"
-'					
-'						If InStr(sParent, "SAP") <> 0 OR InStr(sParent, "Window") Then
-'							Call sendKeys(control_object, sDataValue)
-'						Else
-'							Call sendKeys(control_object(0), sDataValue)
-'						End If
 						
 				Case "SetValue"
-						arrData = dataProvider
+						arrData = dataProvider(sDataValue)
 						
 						If InStr(sParent, "SAP") <> 0 OR InStr(sParent, "Window") Then
 							Call sendKeys(control_object, arrData)
 						Else
 							Call sendKeys(control_object(0), arrData)
 						End If
-								 		
+				
+				Case "SetSystemDate"		
+						setSystemDate(control_object(0))		
+									
+				Case "SetReferenceNumber"		
+						Call setReferenceNumber(control_object(0), sDataValue)
 
 				Case "SelectMenu"
 						control_object(0).Select sDataValue
@@ -469,36 +461,30 @@ Function fnAction()
 						control_object(0).Select sDataValue
 						
 				Case "Select_Required_Requisition"
-						Call Select_Required_Requisition(control_object(0), sDataValue)
+						arrData = dataProvider(sDataValue)
+						Call Select_Required_Requisition(control_object(0), arrData)
 
-'				Case "GetValue"
-'						Call getValue(control_object,sDataValue)
 				Case "GetValue"
-                        arrData = dataProvider
-                        Call getValue(control_object,arrData)
-
-'						
-'				Case "SetValueDynamic"
-'						Call setValueDynamic(control_object, sDataValue)
+                        			arrData = dataProvider(sDataValue)
+						If InStr(sParent, "SAP") <> 0 OR InStr(sParent, "Window") Then
+							Call getValue(control_object,arrData)
+						Else
+							Call getValue(control_object(0),arrData)
+						End If
 						
 				Case "SetValueDynamic"
-						arrData = dataProvider
-						Call setValueDynamic(control_object, arrData)
+						arrData = dataProvider(sDataValue)
+						If InStr(sParent, "SAP") <> 0 OR InStr(sParent, "Window") Then
+							Call setValueDynamic(control_object, arrData)
+						Else
+							Call setValueDynamic(control_object(0), arrData)
+						End If
 
 '				Case "Click"
 '						If InStr(sParent, "SAP") <> 0 OR InStr(sParent, "Window") <> 0 Then
-'							fnClick(control_object)
+'							fnClick(control_object,sDataValue)
 '						Else
-'							fnClick(control_object(0))
-'						End If
-						
-'				Case "Click"
-'						If InStr(sParent, "SAP") <> 0 OR InStr(sParent, "Window") <> 0 Then
-'							fnClick(control_object)
-'						ElseIf (sControl = "GuiTabStrip" )Then
-'							fnGUiTableControlClick control_object,sDataValue
-'						Else
-'							fnClick(control_object(0))
+'							fnClick(control_object(0),sDataValue)
 '						End If
 
 			'Keshub
@@ -510,13 +496,6 @@ Function fnAction()
 						Call setValueChangeBatch(control_object, allBatchesArr, batchNo)
 
 
-'Krishan
-				Case "Click"
-						If InStr(sParent, "SAP") <> 0 OR InStr(sParent, "Window") <> 0 Then
-							fnClick(control_object) 
-						Else
-							fnClick(control_object(0))
-						End If
 			'krishan - earlier by Keshub			
 				Case "SelectCell"
 				
@@ -542,8 +521,11 @@ Function fnAction()
 						'SystemUtil.Run "chrome.exe", sDataValue
 						Run(sDataValue)
 						
+				Case "Maximize"		
+						fnMaximize(control_object)
+						
 				Case "LaunchSAPLogon"
-						arrData = dataProvider
+						arrData = dataProvider(sDataValue)
 						launchSAPLogon(arrData)
 				
 				'Modified by KRISHAN - 26/12		
@@ -553,40 +535,61 @@ Function fnAction()
 				Case "Sync"
 						browserSync(control_object)
 						
+				Case "BrowserSync"
+						browserSync(control_object(0))
+						
 				Case "Keystroke"
-						keyStroke(strValue)
+						keyStroke(sDataValue)
 						
 				Case "closeAllBrowsers"
 						closeAllBrowsers
 						
 				' from keshub		
 				Case "SelectTreeNode"
-                      Call selectTreeNode(control_object, sDataValue)
+                      				Call selectTreeNode(control_object, sDataValue)
+						
+				Case "SelectWebCheckBox"		
+						Call selectWebCheckBox(control_object(0), sDataValue)
                       
-                 'from keshub     
+                 		'from keshub     
   				Case "ClickGUIGridButton"
-                       Call clickGUIGridButton(control_object, sDataValue)
+                       				Call clickGUIGridButton(control_object, sDataValue)
 
 				Case "ClickGUIToolbarButton"
-                       Call clickGUIToolbarButton(control_object, sDataValue)
+                      	 			Call clickGUIToolbarButton(control_object, sDataValue)
 						
-				'Case "waitforObjectProperty"
+				Case "WaitforObjectProperty"
+						Call waitforObjectProperty(control_Object(0))
+						
+				Case "CheckEnabled"
+						arrData = dataProvider(sDataValue)
+						Call objectEnabledCheck(control_Object(0), arrData)
 				
 				Case "VerifyText"	
-						arrData = dataProvider
+						arrData = dataProvider(sDataValue)
 						If InStr(sParent, "SAP") <> 0 OR InStr(sParent, "Window") <> 0 Then
 							testStepStatusFlag = verifyText(control_object, arrData)
 						Else
 							testStepStatusFlag = verifyText(control_object(0), arrData)
 '						msgbox testCaseStatusFlag
 						End If
+						
+				Case "ValueComparator"			
+						arrData = dataProvider(sDataValue)			
+						testStepStatusFlag = valueComparator(arrData)		
+				
+				Case "VerifyIsEmpty"		
+						testStepStatusFlag = verifyIsEmpty(sDataValue)
 
 				Case "SAPVariantSelector"
 						Call variantSelector(control_object, sDataValue)
 						
 				Case "SelectComboBoxItem"
 						Call selectbyTextfromComboBox(control_object, sDataValue)
-						
+				
+				Case "SetValueRadioButton"		
+						Call setValueRadio(control_object)
+				
 				Case "SelectMenuBarItem"
 						Call selectbyTextfromMenuBar(control_Object, sDataValue)
 
@@ -602,26 +605,11 @@ Function fnAction()
 				Case "GetStatusBartext"
 						Call getSTatusBartext(control_object, sDataValue)
 						
-				Case "VerifyIsEmpty"
-                        testStepStatusFlag = verifyIsEmpty(sDataValue)
-                        
-                Case "ValueComparator"    
-                        arrData = dataProvider
-                        If InStr(sParent, "SAP") <> 0 OR InStr(sParent, "Window") <> 0 Then
-                            testStepStatusFlag = valueComparator(arrData)
-                        Else
-                            testStepStatusFlag = valueComparator(arrData)
-'                        msgbox testCaseStatusFlag
-                        End If
-                        
-                Case "GetTextFromTree"
-                		arrData = dataProvider
-                        Call gettextfromMultiColumnTree(control_object, arrData)
-
-				Case "SetValueRadioButton"
-                        Call setValueRadio(control_object)
-
-						
+			
+                         	Case "GetTextFromTree"
+                				arrData = dataProvider(sDataValue)
+                        			Call gettextfromMultiColumnTree(control_object, arrData)
+		
 				Case "exec_HP_ALM"
 				
 						arrData = Split(sDataValue, ",")
@@ -637,10 +625,13 @@ Function fnAction()
 						'arrData = Split(sDataValue, ",")
 						'CY_Cycle = arrData(0)
 						Test_Step = sDataValue
-'						executestepArr = dataProvider
+						'executestepArr = dataProvider(sDataValue)
 						'msgbox Test_Case_ID
 						'msgbox Test_Step_no
-						Call execute_step(Test_Step, testStepStatusFlag, actualResult)
+						If InStr(sParent, "SAP") <> 0 OR InStr(sParent, "Window") <> 0 Then		
+								Call execute_step(control_object,Test_Step, testStepStatusFlag, actualResult)		
+						Else		
+								Call execute_step(control_object(0),Test_Step, testStepStatusFlag, actualResult)
 
 				Case "SendKeys"
 						'This function uses SendKeys method to select value from the Menu
@@ -657,6 +648,9 @@ Function fnAction()
 						
 				Case "Update Value"
 						updateValue(sDataValue)
+						
+				Case "DoubleClick"		
+						doubleClick(control_object(0))
 						
 				End Select
 				
@@ -679,13 +673,17 @@ Function Run(appURL)
 	
 End Function
 
+Function fnMaximize(objControl)		
+	objControl.Maximize			
+End Function
 
-Function fnClick(objControl)
+Function fnClick(objControl,strValue)
 	If waitforElementTimeOut(objControl,20) Then
-		If (sControl = "GuiTabStrip" )Then
-			fnGUiTableControlClick control_object,sDataValue
-		Else
+		If Len(strValue) = 0 Then
 			objControl.Click
+		Else
+			msgbox strValue
+			objControl.Select strValue
 		End If
 	else
 		Print "Control Not Available"
@@ -742,8 +740,6 @@ Function sendKeys(objControl, arrData)
 			strValue = arrData(0)
 			objControl.Set strValue
 		End If
-		
-'		objControl.CaptureBitmap "C:\Users\keshubm\WORK\UFT\Project_Framework\Evidences\New_Evidence1.png", True
 	Else
 		Print "Control Not Available"
 	End If
@@ -771,29 +767,6 @@ Function fnSelect(objcontrol,strValue)
 		Print "Control not found."
 	End If
 End Function
-
-
-
-
-'Function sendKeys(objControl, strValue)
-'
-'	If waitforElementTimeOut(objControl,20) Then
-'		If sControl = "GuiTableControl" Then
-'			arrData = Split(strValue, ",")
-'			SAPTableRowNum = arrdata(0)
-'			SAPTableColName = arrData(1)
-'			SAPTableColValue = arrData(2)
-'			Call objControl.SetCellData(SAPTableRowNum,SAPTableColName,SAPTableColValue)
-'		Else
-'			objControl.Set strValue
-'		End If
-'		
-''		objControl.CaptureBitmap "C:\Users\keshubm\WORK\UFT\Project_Framework\Evidences\New_Evidence1.png", True
-'	Else
-'		Print "Control Not Available"
-'	End If
-'	
-'End Function
 
 'Krishan
 Function fnGUiTableControlClick(objControl,Strvalue)
@@ -874,24 +847,16 @@ Function func_selectWebTablObject(objControl, rCount, strValue)
 	
 End Function
 
-Function Select_Required_Requisition(objControl, offsetfromDefaultindex)
+Function Select_Required_Requisition(objControl, arrData)
 	Dim mySendKeys
 	set mySendKeys = CreateObject("WScript.shell")
+	navArg = arrData(0)
+	offsetfromDefaultindex = arrData(1)
+	navStr = "{" & navArg & "}"
 	For index = 1 To offsetfromDefaultindex 
-		mySendKeys.SendKeys("{UP}")
+		mySendKeys.SendKeys(navStr)
 	Next
 	mySendKeys.SendKeys("{ENTER}")
-'	If objControl.Exist Then
-'		
-'		objControl.WaitProperty"value","ZMNR Manual Req",4000
-'		
-'		ElseIf objControl.Exist Then
-'		
-'		objControl.WaitProperty"value","ZMNR Manual Req",4000
-'		
-'	End If
-		
-'	Browser("title:=Create Purchase Requisition").Sync
 '	wait 5
 End Function
 
@@ -960,6 +925,50 @@ Function getValue(objControl, arrData)
 			orderNoStandard = ExtractedValue
 		ElseIf itemnametofetch = "Delivery NO" Then
 			deliveryNo = ExtractedValue
+		ElseIf itemnametofetch = "PR NO" Then
+			purchReqStr = ExtractedValue
+			purchReqArr = getNumbersFromString(purchReqStr)
+			purchReqNo = purchReqArr(0)
+			'msgbox purchReqNo
+		ElseIf itemnametofetch = "INBOUNDDEL NO" Then	
+			inboundDelStr = ExtractedValue	
+			inboundDelArr = getNumbersFromString(inboundDelStr)
+			inboundDelNo = inboundDelArr(0)	
+			'msgbox inboundDelNo
+		ElseIf itemnametofetch = "Purch Request Vendor" Then	
+			purchReqVendor = ExtractedValue
+		ElseIf itemnametofetch = "Purchasing Org" Then	
+			purchasingOrg = ExtractedValue
+		ElseIf itemnametofetch = "Company Code" Then	
+			companyCode = ExtractedValue
+		ElseIf itemnametofetch = "PO NO" Then	
+			purchOrderNo = ExtractedValue
+			'msgbox purchOrderNo
+		ElseIf itemnametofetch = "Net Price" Then
+			netPrice = ExtractedValue
+'			msgbox netPrice		
+		ElseIf itemnametofetch = "Baseline Date" Then
+			baselineDate = ExtractedValue
+'			msgbox baselineDate
+		ElseIf itemnametofetch = "Payment Terms" Then
+			pmntTerms = ExtractedValue
+'			msgbox pmntTerms
+		ElseIf itemnametofetch = "Invoice NO" Then
+			invoiceStr = ExtractedValue
+			invoiceArr = getNumbersFromString(invoiceStr)
+			invoiceNo = inboundDelArr(0)
+'			msgbox invoiceNo
+		ElseIf itemnametofetch = "Short Close PO" Then
+			shortCloseStr = ExtractedValue
+'			msgbox shortCloseStr		
+		ElseIf itemnametofetch = "Contract NO" Then
+			contractCreationStr = ExtractedValue
+			contractArr = getNumbersFromString(contractCreationStr)	
+			contractNumber = contractArr(0)
+		ElseIf itemnametofetch = "IM" Then
+			siffIMStr = ExtractedValue
+		ElseIf itemnametofetch = "Source Location" Then
+			sourceLoc = ExtractedValue
 		ElseIf itemnametofetch = "Warehouse Order_inbound" Then
 			woInboundNumber = ExtractedValue
 		ElseIf itemnametofetch = "Order NO Meded" Then
@@ -1068,14 +1077,40 @@ Function setValueDynamic(objControl, arrData)
 	ElseIf strValue = "Warehouse Order_inbound" Then
 		dynamicVal = woInboundNumber
 	ElseIf strValue = "Spool NO" Then
-        dynamicVal = spoolNo
-    ElseIf strValue = "Order NO Meded" Then
+        	dynamicVal = spoolNo
+	ElseIf strValue = "PR NO" Then
+		dynamicVal = purchReqNo
+'		msgbox "Setting Purchase Requisition NO"
+	ElseIf strValue = "INBOUNDDEL NO" Then
+		dynamicVal = inboundDelNo
+'		msgbox "Setting Inbound Delivery NO"
+	ElseIf strValue = "PO NO" Then
+		dynamicVal = purchOrderNo
+'		msgbox "Setting Purchase Order NO"
+	ElseIf strValue = "Purch Request Vendor" Then
+		dynamicVal = purchReqVendor
+'		msgbox "Setting Vendor"
+	ElseIf strValue = "Company Code" Then
+		dynamicVal = companyCode
+	ElseIf strValue = "Purchasing Org" Then
+		dynamicVal = purchasingOrg
+'		msgbox "Setting Purchasing Org"
+	ElseIf strValue = "Net Price" Then
+		dynamicVal = netPrice
+'		msgbox "Setting Net Price"
+	ElseIf strValue = "Per Quantity Price" Then
+		dynamicVal = perQuantityPrice
+'		msgbox "Setting Per Quantity Price"
+	ElseIf strValue = "Contract NO" Then
+		dynamicVal = contractNumber
+'		msgbox "Setting Per Quantity Price"
+	ElseIf strValue = "Order NO Meded" Then
         dynamicVal = orderNoMeded
 	ElseIf strValue = "Order NO Meded Issue" Then
         dynamicVal = orderNoMededIssue
 '    ElseIf strValue = "PO Inbound Delivery NO" Then
 '        dynamicVal = poInboundDeliveryNo
-    ElseIf strValue = "Qty" Then
+    	ElseIf strValue = "Qty" Then
 		dynamicVal = qty
 	ElseIf strValue = "Batch" Then
 		dynamicVal = batch
@@ -1128,10 +1163,11 @@ Function GeneralVerify(ByVal observed, ByVal operator, ByVal expected)
 End Function
 
 Function browserSync(objControl)
-	getBrowserCount = objControl.Count
-'	msgBox "Browser Count is " & getBrowserCount
-	objControl(getBrowserCount-1).Sync
-	wait(5)
+	
+	While objControl.Object.readyState <> "complete"
+		objControl.Sync
+	Wend
+	
 End Function
 
 Function keyStroke(strValue)
@@ -1147,6 +1183,8 @@ Function keyStroke(strValue)
 		mySendKeys.SendKeys("{RIGHT}")
 	ElseIf strValue = "ENTER" Then
 		mySendKeys.SendKeys("{ENTER}")
+	ElseIf strValue = "F7" Then
+		mySendKeys.SendKeys("{F7}")
 	End If
 	
 End Function
@@ -1162,10 +1200,20 @@ End Function
 
 Function closeAllBrowsers
 
-	count = getCount
-	For i = count-1 To 0 Step -1
-		Browser("CreationTime:=0").Close
+	Dim oBrDes
+	Dim oBrObjList
+	Dim objIndex
+	
+	Set oBrDes = Description.Create
+	oBrDes("micclass").Value = "Browser"
+	Set oBrObjList = Desktop.ChildObjects(oBrDes)
+	
+	For objIndex=0 To oBrObjList.count-1 
+		oBrObjList(objIndex).Close
 	Next
+	
+	Set oBrObjList=Nothing
+	Set oBrDes=Nothing
 	
 End Function
 
@@ -1173,7 +1221,7 @@ Function waitforObjectProperty(objControl)
 	
 	iterator=10
 	For i = 1 To iterator
-		If objControl.WaitProperty("visible",-1,5000) Then
+		If objControl.WaitProperty("visible",True,5000) Then
 			msgbox "Here"
 			waitforObjectProperty=1
 			Exit For
@@ -1593,7 +1641,19 @@ Function getSTatusBartext(objControl, propertyName)
 	statusBarText = objControl.GetROProperty(propertyName)
 End Function
 
+Function checkforcharsinString(strValue)
 
+	Set re = New RegExp
+	re.Pattern = "[a-z]"
+	re.IgnoreCase = True
+	re.Global = True
+	hasMatches = re.Test(strValue)
+	
+	If hasMatches = True Then
+		numberArr = getNumbersFromString(strValue)
+	End If
+	
+End Function
 
 Function verifyIsEmpty(strValue)
     
@@ -1603,6 +1663,25 @@ Function verifyIsEmpty(strValue)
             verifyIsEmpty = 0
         Else
             actualResult = "Print Packing failed. Spool Number is not generated."
+            verifyIsEmpty = 1
+        End If
+	
+    ElseIf strValue = "Baseline Date" Then
+        If IsEmpty(baselineDate) Then
+            actualResult = "Baseline Date field empty. Invoicing not successful."
+            verifyIsEmpty = 0
+        Else
+            actualResult = "Baseline Date = " & baselineDate
+            verifyIsEmpty = 1
+        End If
+    End If
+    
+    ElseIf strValue = "Payment Terms" Then
+        If IsEmpty(pmntTerms) Then
+            actualResult = "Payment Terms field empty. Invoicing not successful."
+            verifyIsEmpty = 0
+        Else
+            actualResult = "Payment Terms = " & pmntTerms
             verifyIsEmpty = 1
         End If
     End If
@@ -1758,21 +1837,18 @@ Function updateValue(strValue)
 		If IsNumeric(stockOverviewItem) Then
         	updatedreceivedOnDockQty = CInt(stockOverviewItem)-1
         	msgbox updatedreceivedOnDockQty
-        End If
 	
 	ElseIf (strValue = "Free Stock") Then
 	
 		If IsNumeric(stockOverviewItem) Then
         	updatedFreeStockQty = CInt(stockOverviewItem)+1
         	msgbox updatedFreeStockQty
-        End If
         
-    ElseIf (strValue = "SYK Corp Allendale") Then
+    	ElseIf (strValue = "SYK Corp Allendale") Then
 	
 		If IsNumeric(stockOverviewItem) Then
         	updatedSykCorpAllendaleQty = CLng(stockOverviewItem)-1
         	msgbox updatedSykCorpAllendaleQty
-        End If
         
 	End If
 	
@@ -1823,7 +1899,7 @@ Function setValueChangeBatch(objControl, allBatchesArr, batchNo)
 	
 	If batchFlag = 1 Then
 		arrData(0) = changeBatchval
-		Call sendKeys(control_object, arrData)
+		Call sendKeys(objControl, arrData)
 		
 	Else
 		msgbox "Batch array does not contain Batch numbers or only contains 1 batch number."
@@ -1832,9 +1908,31 @@ Function setValueChangeBatch(objControl, allBatchesArr, batchNo)
 	
 End Function
 
+Function doubleClick(objControl)
 
+	Setting.WebPackage("ReplayType") = 2
+	objControl.FireEvent "ondblclick"
+	Setting.WebPackage("ReplayType") = 1
 
+End Function
 
+Function setSystemDate(objControl)
 
+	sysDate = Right("0" & DatePart("d",Date), 2) & "." & Right("0" & DatePart("m",Date), 2) & "." & DatePart("yyyy",Date)
+	arrData(0) = changeBatchval
+	Call sendKeys(objControl, arrData)
+	
+End Function
 
+Function setReferenceNumber(objControl, strValue)
+
+	If strValue = "INV" Then
+		referenceNumber = "INV-" & purchOrderNo
+		msgbox referenceNumber
+	End If
+	arrData(0) = referenceNumber
+	
+	Call sendKeys(objControl,arrData)
+
+End Function
 
