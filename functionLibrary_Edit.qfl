@@ -1,6 +1,6 @@
 
 'Variable Initialization and Declaration
-Dim sExcelLocation, ScreenshotFolderPath
+Dim getAUTRootFolder, envVarpath, organizerPath, url, sapUsername, sapPassword, almUsername, almPassword, sExcelLocation, ScreenshotFolderPath, almDomain, almProject		'Configuration Variables
 Dim sParent, sParentProp, arrParent, current_parent, arrParentProp, sControl, sControlProp, arrControlProp, sAction, sDataValue, restart, theRun, arrData, arrNum
 Dim obj_hierarchy, control_object
 Dim objhierarchyArr()
@@ -71,19 +71,31 @@ Dim blockedSBin, binStockRemovalFlag
 'sExcelLocation = "C:\Drive E\Automation\Project_Framework_V1\Organizer\Test_Case.xls"
 'ScreenshotFolderPath = "C:\Drive E\Automation\Project_Framework_V1\Evidences"
 
-'The below excel path for should be dynamic.
+
 'sExcelLocation = "C:\Users\keshubm\WORK\UFT\Automation Framework\Project_Framework_V2_KS\Organizer\Test_Case.xls"
 'ScreenshotFolderPath = "C:\Users\keshubm\WORK\UFT\Automation Framework\Project_Framework_V2_KS\Evidences"
 
+'========================================
+'	Function Name - configureExecutionSheetName
+'	Purpose - This function configures the path of the BPM Scenario Excel from where the Test steps are to be read.
+'	Argument - BPM Scenario name
+'========================================
+
 Function configureExecutionSheetName(bpmScenarioName)
 	
-	sExcelLocation = "C:\Users\keshubm\WORK\UFT\Automation Framework\Project_Framework_V1_ALMPath\Organizer\" & bpmScenarioName & ".xls"	
-	ScreenshotFolderPath = "C:\Users\keshubm\WORK\UFT\Automation Framework\Project_Framework_V1_ALMPath\Evidences"
+	sExcelLocation = getAUTRootFolder & "Organizer\" & bpmScenarioName & ".xls"	
+	'ScreenshotFolderPath = "C:\Users\keshubm\WORK\UFT\Automation Framework\Project_Framework_V1_ALMPath\Evidences"
 	
 End Function
 
-'Arguments of below function should come from the 'Execution Path' column of the Organizer_New excel for execution in ALM. 
-The column value should be comma separated. Example "Root\Informal Test Cycle\ STP1,Purchase Requisition,48" 
+'========================================
+'	Function Name - exec_HP_ALM
+'	Purpose - This function establishes connection with ALM.
+'	Argument1 - Path(Starts from Root till the parent of the test set)
+'	Argument2 - CY_Cycle(Test Set Folder Name)
+'	Argument3 - Test_Case_ID(ALM ID of the Test case to be executed)
+'======================================== 
+ 
 Function exec_HP_ALM (Path, CY_CYCLE,Test_Case_ID)
 
 
@@ -136,6 +148,15 @@ Set theRun = RunF.AddItem("MyRun")
 theRun.CopyDesignSteps
 
 End Function
+
+'========================================
+'	Function Name - execute_step
+'	Purpose - This function updates the status of each test step as "Passed" or "Failed". 
+'				It also updates the actual result and takes screenshot at each step.
+'	Argument1 - step_ID(Step serial number in ALM)
+'	Argument2 - testStepStatusFlag(1 = Passed, 0 = Failed)
+'	Argument3 - actualResult(acutal result to be updated in ALM corresponding to step_ID)
+'========================================
 
 Function execute_step (objControl,step_ID, testStepStatusFlag, actualResult)
 
@@ -213,6 +234,14 @@ End If
 	
 End Function
 
+'========================================
+'	Function Name - setTestStatus
+'	Purpose - This function updates the overall test case status as "Passed" or "Failed". 
+'				
+'	Argument1 - theRun
+'	Argument2 - testStepStatusFlag(1 = Passed, 0 = Failed, 2 = Not Completed)
+'========================================
+
 Function setTestStatus(theRun, testCaseStatusFlag)
 	
 	If testCaseStatusFlag=1 Then
@@ -239,6 +268,7 @@ End Function
 '========================================
 '	Function Name - fnExecuteTestCase
 '	Purpose - This is just a wrapper function that calls fnReadExcel function
+'	Argument1 - sTestCaseName(Excel Worksheet Name)
 '========================================
 Function fnExecuteTestCase(sTestCaseName)
 		pgiDoneFlag = 0
@@ -253,6 +283,7 @@ End Function
 '========================================
 '	Function Name - fnReadExcel
 '	Purpose - This function loads the excel sheet into QTP data table and stores the cell values in Global Variables
+'	Argument1 - sTestCaseName(Excel Worksheet Name)
 '========================================
 Function fnReadExcel(sSheetName)
 
@@ -660,6 +691,12 @@ Function fnAction()
 				
 End Function
 
+'========================================
+'	Function Name - Run
+'	Purpose - This function launches the application. 
+'	Argument1 - appURL
+'========================================
+
 Function Run(appURL)
 
 	returnVal = InStr(appURL, "https")
@@ -673,9 +710,23 @@ Function Run(appURL)
 	
 End Function
 
+'========================================
+'	Function Name - fnMaximize
+'	Purpose - This function maximizes the SAP application window. 
+'	Argument1 - objControl(Object on which maximize operation is to be performed)
+'========================================
+
 Function fnMaximize(objControl)		
 	objControl.Maximize			
 End Function
+
+'========================================
+'	Function Name - fnClick
+'	Purpose - This function clicks on the object control supplied as the argument.  
+'		The strValue is only utilized when the objControl argument is of type "GuiTabStrip"
+'	Argument1 - objControl(Object on which click operation is to be performed)
+'	Argument2 - strValue(The option under GuitabStrip to be selected)
+'========================================
 
 Function fnClick(objControl,strValue)
 	If waitforElementTimeOut(objControl,20) Then
@@ -725,6 +776,14 @@ End Function
 '	
 'End Function
 
+'=============================================================================
+'	Function Name - sendKeys
+'	Purpose - This function sets the value of a text Input type object .  
+'	Argument1 - objControl(Input type object whose value is to be set)
+'	Argument2 - arrData(A data array consisting of either a single value (for setting value in a normal text box) or multiple values
+'			for seting value inside GuiTableControl cell)
+'=============================================================================
+
 Function sendKeys(objControl, arrData)
 
 	If waitforElementTimeOut(objControl,20) Then
@@ -745,6 +804,12 @@ Function sendKeys(objControl, arrData)
 	End If
 End Function
 
+'=============================================================================
+'	Function Name - selectTreeNode
+'	Purpose - This function expands the tree node of a SAPGuiTree object .  
+'	Argument1 - objControl(SAPGuiTree object)
+'	Argument2 - selectionString(The path of the tree node delimitted by ;)
+'=============================================================================
 
 Function selectTreeNode(objControl, selectionString)
     objControl.Expand selectionString
@@ -776,6 +841,12 @@ Else
 	Print "Control Not Available"
 End If
 	End Function
+	
+'=============================================================================
+'	Function Name - waitforElementTimeOut
+'	Purpose - This function checks if the object on which the operation is to be performed exists on the page  .  
+'	Argument1 - timeToWaitFor(seconds to wait for before the object exists)
+'=============================================================================
 
 Function waitforElementTimeOut(objControl,timeToWaitFor)
 	If objControl.Exist(timeToWaitFor) Then
@@ -847,6 +918,13 @@ Function func_selectWebTablObject(objControl, rCount, strValue)
 	
 End Function
 
+'=============================================================================
+'	Function Name - Select_Required_Requisition
+'	Purpose - This function selects the dropdown value from a web dropdown object  .  
+'	Argument1 - objControl(Dropdown object)
+'	Argument2 - offsetfromDefaultindex(Index from default value)
+'=============================================================================
+
 Function Select_Required_Requisition(objControl, arrData)
 	Dim mySendKeys
 	set mySendKeys = CreateObject("WScript.shell")
@@ -859,6 +937,14 @@ Function Select_Required_Requisition(objControl, arrData)
 	mySendKeys.SendKeys("{ENTER}")
 '	wait 5
 End Function
+
+'=============================================================================
+'	Function Name - getValue
+'	Purpose - This function gets the text value displayed from the object supplied as the argument.  
+'	Argument1 - objControl
+'	Argument2 - arrData(A data array consisting of either 2 arguments(propertyname and itemtofetch) or 3 arguments(Rownum, colName and itemnametofetch)
+'			for getting value from a GuiShell/GuiTableControl object)
+'=============================================================================
 
 Function getValue(objControl, arrData) 
 
@@ -1040,6 +1126,15 @@ End Function
 '	
 'End Function
 
+'=============================================================================
+'	Function Name - setValueDynamic
+'	Purpose - This function is used to set the value with dynamic data which has been obtained in an earlier test script of the 
+'		same test scenario currently being executed.  
+'	Argument1 - objControl
+'	Argument2 - arrData(A data array consisting of either 1 argument(itemnametofetch) or 3 arguments(Rownum, colName and itemnametofetch)
+'			for setting value in either a textbox or a GuiShell/GuiTableControl object)
+'=============================================================================
+
 
 Function setValueDynamic(objControl, arrData)
 	count=ubound(arrData)+1
@@ -1162,6 +1257,12 @@ Function GeneralVerify(ByVal observed, ByVal operator, ByVal expected)
     GeneralVerify = iStatus
 End Function
 
+'=============================================================================
+'	Function Name - browserSync
+'	Purpose - This function waits for the page load to be completed.  
+'	Argument1 - objControl
+'=============================================================================
+
 Function browserSync(objControl)
 	
 	While objControl.Object.readyState <> "complete"
@@ -1169,6 +1270,12 @@ Function browserSync(objControl)
 	Wend
 	
 End Function
+
+'=============================================================================
+'	Function Name - keyStroke
+'	Purpose - This function uses Window Script to execute key press eg. UP,DOWN,LEFT,RIGHT and ENTER ETC.  
+'	Argument1 - strValue(A string whose value is the key to be pressed)
+'=============================================================================
 
 Function keyStroke(strValue)
 	Dim mySendKeys
@@ -1189,6 +1296,11 @@ Function keyStroke(strValue)
 	
 End Function
 
+'=============================================================================
+'	Function Name - getCount
+'	Purpose - This function returns the count of the crrently open tabs.  
+'=============================================================================
+
 Function getCount
 
 	Set BrowserObj = Description.Create
@@ -1197,6 +1309,11 @@ Function getCount
 	getCount = Obj.Count
 	
 End Function
+
+'=============================================================================
+'	Function Name - closeAllBrowsers
+'	Purpose - This function closes all open tabs.  
+'=============================================================================
 
 Function closeAllBrowsers
 
@@ -1217,6 +1334,12 @@ Function closeAllBrowsers
 	
 End Function
 
+'=============================================================================
+'	Function Name - waitforObjectProperty
+'	Purpose - This function waits till the "visible" property of the object becomes true.  
+'	objControl - Object to wait for
+'=============================================================================
+
 Function waitforObjectProperty(objControl)
 	
 	iterator=10
@@ -1231,6 +1354,11 @@ Function waitforObjectProperty(objControl)
 	Next
 	
 End Function
+
+'=============================================================================
+'	Function Name - dataProvider
+'	Purpose - This function retuns an array consisting of the data values from the "Data" column in excel separated by comma.  
+'=============================================================================
 
 Function dataProvider
 	arrData = Split(sDataValue, ",")
@@ -1283,6 +1411,13 @@ End Function
 '	End If
 '	
 'End Function
+
+'================================================================================================================================
+'	Function Name - verifyText
+'	Purpose - This function verifies if expected string is identical/part of the Originl String
+'	Argument1 - objControl(SAPGuiEdit etc)
+'	Argumenr2 - arrData(A data array consisting of the "property name" whose value is to be checked against the "expected str")
+'================================================================================================================================
 
 Function verifyText(objControl, arrData)
 	Dim fileName
@@ -1340,6 +1475,12 @@ Function verifyText(objControl, arrData)
 	
 End Function
 
+'================================================================================================================================
+'	Function Name - getNumbersFromString
+'	Purpose - This function returns an array of numbers extracted from the string argument.
+'	Argument1 - textStr(string argument with numbers. Eg "11 aa bbcc would 234" would return an array [11 234])
+'================================================================================================================================
+
 Function getNumbersFromString(textStr)
 	j=0			'starting index for Numbers array.
 '	msgbox "Getting Numbers"
@@ -1358,6 +1499,15 @@ Function getNumbersFromString(textStr)
 	getNumbersFromString = arrNumbers
 End Function
 
+'================================================================================================================================
+'	Function Name - getPurchaseRequisitionNumber
+'	Purpose - This function returns the Purchase Requisition Number (PTP Create Purchase Req Test case).
+'	Argument1 - testStepStatusFlag(1 = Passed, 0 = Failed)
+'	Argument2 - objControl(WebElement object)
+'	Argument3 - PropertyName(Property name whose value is to be fetched)
+'================================================================================================================================
+
+
 Function getPurchaseRequisitionNumber(testStepStatusFlag, objControl, PropertyName)
 	If testStepStatusFlag = 1 Then
 		actualStr = objControl.GetROProperty(PropertyName)
@@ -1372,6 +1522,13 @@ Function getPurchaseRequisitionNumber(testStepStatusFlag, objControl, PropertyNa
 	End If	
 End Function
 
+'================================================================================================================================
+'	Function Name - verifyTextInput
+'	Purpose - This function verifies if a Text field is empty or not
+'	Argument1 - objControl(SAPGuiEdit/WebEdit object)
+'	Argument2 - PropertyName(Property name whose value is to be fetched)
+'================================================================================================================================
+
 Function verifyTextInput(objControl, PropertyName)
 	textVal = objControl.GetROProperty(PropertyName)
 	If textVal = "" Then
@@ -1384,6 +1541,12 @@ Function verifyTextInput(objControl, PropertyName)
 	Call QC_AttachScreenshots(objControl, ScreenshotFolderPath)
 	
 End Function
+
+'================================================================================================================================
+'	Function Name - importSheetToDataTable
+'	Purpose - This function imports the Excel to UFT Datatable
+'	Argument1 - sSheetName(Excel Sheet Name)
+'================================================================================================================================
 
 Function importSheetToDataTable(sSheetName)
 
@@ -1452,6 +1615,13 @@ End Function
 '	
 'End Function
 
+'================================================================================================================================
+'	Function Name - createFilenameTimeStamp
+'	Purpose - This function creates a timestamp for each screenshot and stores in a local folder
+'	Argument1 - FolderPath(Local folder where the screenshots are stored.)
+'================================================================================================================================
+
+
 Function createFilenameTimeStamp(FolderPath)
 
 	Dim WshShell
@@ -1467,6 +1637,11 @@ Function createFilenameTimeStamp(FolderPath)
 	createFilenameTimeStamp = strFileName
 
 End Function
+
+'========================================
+'	Function Name - fnIdentifySAPParentHierarchy
+'	Purpose - This function converts the values in cells A and B into QTP readable format for SAP application
+'========================================
 
 Function fnIdentifySAPParentHierarchy()
 	
@@ -1491,6 +1666,11 @@ Function fnIdentifySAPParentHierarchy()
 		fnIdentifySAPControl()
 	
 End Function
+
+'========================================
+'	Function Name - fnIdentifySAPControl
+'	Purpose - This function converts the values in cells C and D into QTP readable format and then combines values from Cells A, B, C and D to come up with a single object
+'========================================
 
 Function fnIdentifySAPControl()
 
@@ -1550,6 +1730,12 @@ Function hovermouse(objControl)
 
 End Function
 
+'========================================
+'	Function Name - launchSAPLogon
+'	Purpose - This function launches SAP GUI client
+'	Argument1 - arrData(An array consisting of servername, Username and password to log into)
+'========================================
+
 Function launchSAPLogon(arrData)
 	
 	Dim Servername,Client,Username,Password,Language
@@ -1577,6 +1763,13 @@ Function fetchConsignmentNumber(objControl, strValue)
 	
 End Function
 
+'========================================
+'	Function Name - variantSelector
+'	Purpose - This function selects a row in a SAPGuiGrid/SAPGuiTable object
+'	Argument1 - objControl(SAPGuiGrid/SAPGuiTable object)
+'	Argument2 - strValue(Selection String)
+'========================================
+
 Function variantSelector(objControl, strValue)
 
 	Dim colName, cellContent
@@ -1588,6 +1781,13 @@ Function variantSelector(objControl, strValue)
 	'objControl.PressEnter
 '	SAPGuiSession("Session").SAPGuiWindow("Create deliveries in bckgr.pr.").SAPGuiToolbar("GridToolbar").PressButton "IMMSTART"	
 End Function
+
+'========================================
+'	Function Name - clickGUIGridButton
+'	Purpose - This function clicks on a SAPGuiGrid Button
+'	Argument1 - objControl(SAPGuiGrid/SAPGuiTable object)
+'	Argument2 - strValue(Selection String)
+'========================================
 
 Function clickGUIGridButton(objControl, buttontext)
 '	Set objToolbar = SAPGuiSession("micclass:=SAPGuiSession","systemname:=EMQ").SAPGuiWindow("micclass:=SAPGuiWindow","text:=Warehouse Management Monitor SAP - Warehouse Number KZ01").SAPGuiToolbar("title:=Outbound Delivery Order")
@@ -1603,6 +1803,13 @@ Function clickGUIGridButton(objControl, buttontext)
 	Next
 End Function
 
+'========================================
+'	Function Name - clickGUIToolbarButton
+'	Purpose - This function clicks on a SAPGuiToolbar Button
+'	Argument1 - objControl(SAPGuiToolbar object)
+'	Argument2 - strValue(Selection String)
+'========================================
+
 Function clickGUIToolbarButton(objControl, buttontext)
 '	Set objToolbar = SAPGuiSession("micclass:=SAPGuiSession","systemname:=EMQ").SAPGuiWindow("micclass:=SAPGuiWindow","text:=Warehouse Management Monitor SAP - Warehouse Number KZ01").SAPGuiToolbar("title:=Outbound Delivery Order")
 	maxIndex = objControl.Object.ButtonCount 
@@ -1617,7 +1824,12 @@ Function clickGUIToolbarButton(objControl, buttontext)
 	Next
 End Function
 
-
+'========================================
+'	Function Name - selectbyTextfromComboBox
+'	Purpose - This function selects an option from SAPGuiComboBox
+'	Argument1 - objControl(SAPGuiComboBox object)
+'	Argument2 - selectionString(Selection String)
+'========================================
 
 'krishan 03/01
 Function selectbyTextfromComboBox(objControl, selectionString)
@@ -1633,13 +1845,34 @@ Function selectbyTextfromComboBox(objControl, selectionString)
 	End If
 	End Function
 
+'========================================
+'	Function Name - selectbyTextfromMenuBar
+'	Purpose - This function selects an option from SAP Menu Bar
+'	Argument1 - objControl(SAPGuiMenuBar object)
+'	Argument2 - selectionString(Selection String)
+'========================================
+
 Function selectbyTextfromMenuBar(objControl, selectionString)
 	objControl.Select selectionString
 End Function
 
+'========================================
+'	Function Name - getSTatusBartext
+'	Purpose - This function gets the Status Bar text.
+'	Argument1 - objControl(SAPGuiStatusBar object)
+'	Argument2 - selectionString(Selection String)
+'========================================
+
 Function getSTatusBartext(objControl, propertyName)
 	statusBarText = objControl.GetROProperty(propertyName)
 End Function
+
+'========================================
+'	Function Name - checkforcharsinString
+'	Purpose - This function checks for characters in a string. 
+'	If True, calls another function to extract numbers from alphanumeric string.
+'	Argument1 - strValue(Alphanumeric string)
+'========================================
 
 Function checkforcharsinString(strValue)
 
@@ -1654,6 +1887,12 @@ Function checkforcharsinString(strValue)
 	End If
 	
 End Function
+
+'========================================
+'	Function Name - verifyIsEmpty
+'	Purpose - This function checks for Empty string and updates the actual result and the test step status.
+'	Argument1 - strValue(Alphanumeric string)
+'========================================
 
 Function verifyIsEmpty(strValue)
     
@@ -1705,6 +1944,12 @@ End Function
 '    End If
 '    
 'End Function
+
+'========================================
+'	Function Name - valueComparator
+'	Purpose - This function checks for equality of two numbers/strings.
+'	Argument1 - arrData(An array consisting of arguments "variable name" and "expected str"(optional arg - not required when verifying quantity updates))
+'========================================
 
 'updated function from Keshub
 Function valueComparator(arrData)
@@ -1787,6 +2032,13 @@ Function valueComparator(arrData)
     End If
 End Function
 
+'========================================
+'	Function Name - gettextfromMultiColumnTree
+'	Purpose - This function gets the Item text corresponding to node text and column number from a SAPGuiTree .
+'	Argument1 - objControl(SAPGuiTree object)
+'	Argument2 - arrData(Consists of 2 arguments - "column name" and "strValue" which is the node text )
+'========================================
+
 ' From Keshub
 Function gettextfromMultiColumnTree(objControl, arrData)
     strValue = arrData(0)
@@ -1830,6 +2082,12 @@ Function gettextfromMultiColumnTree(objControl, arrData)
     
 End Function
 
+'========================================
+'	Function Name - updateValue
+'	Purpose - This function updates the quantity value.
+'	Argument1 - strValue(This string value is used to decide which variable is to be updated.)
+'========================================
+
 Function updateValue(strValue)
 
 	If (strValue = "Received On Dock") Then
@@ -1854,6 +2112,11 @@ Function updateValue(strValue)
 	
 End Function
 
+'========================================
+'	Function Name - setValueRadio
+'	Purpose - This function checks the radio object passed as an argument to the function.
+'	Argument1 - objControl(Radio object to be set)
+'========================================
 
 Function setValueRadio(objControl)
 
@@ -1861,6 +2124,12 @@ Function setValueRadio(objControl)
     objControl.SetFocus
 
 End Function
+
+'========================================
+'	Function Name - setValueRadio
+'	Purpose - This function checks the radio object passed as an argument to the function.
+'	Argument1 - objControl(Radio object to be set)
+'========================================
 
 Function getBatchesPerMaterial(objControl, strValue) 
 	j=0
@@ -1880,6 +2149,14 @@ Function getBatchesPerMaterial(objControl, strValue)
 '	getBatchesPerMaterial = allBatchesArr
 	
 End Function
+
+'========================================================================================================================
+'	Function Name - setValueChangeBatch
+'	Purpose - This function is used for the change batch scenario where a new batch is selected corresponding to a material.
+'	Argument1 - objControl(SAPGuiEdit field)
+'	Argument2 - allBatchesArr(An array of batch numbers corresponding to a material)
+'	Argument3 - batchNo(Batch number which has to be replaced with a new batch number)
+'========================================================================================================================
 
 Function setValueChangeBatch(objControl, allBatchesArr, batchNo)
 	batchFlag = 0
@@ -1908,6 +2185,12 @@ Function setValueChangeBatch(objControl, allBatchesArr, batchNo)
 	
 End Function
 
+'========================================================================================================================
+'	Function Name - doubleClick
+'	Purpose - This function is used fr double clicking an object.
+'	Argument1 - objControl(Web Object)
+'========================================================================================================================
+
 Function doubleClick(objControl)
 
 	Setting.WebPackage("ReplayType") = 2
@@ -1916,6 +2199,12 @@ Function doubleClick(objControl)
 
 End Function
 
+'========================================================================================================================
+'	Function Name - setSystemDate
+'	Purpose - This function is used fr double clicking an object.
+'	Argument1 - objControl(Web Object)
+'========================================================================================================================
+
 Function setSystemDate(objControl)
 
 	sysDate = Right("0" & DatePart("d",Date), 2) & "." & Right("0" & DatePart("m",Date), 2) & "." & DatePart("yyyy",Date)
@@ -1923,6 +2212,13 @@ Function setSystemDate(objControl)
 	Call sendKeys(objControl, arrData)
 	
 End Function
+
+'========================================================================================================================
+'	Function Name - setReferenceNumber
+'	Purpose - This function is used for setting the reference number value of an Invoice (PTP).
+'	Argument1 - objControl(WebElement object)
+'	Argument2 - strValue(This value is prefixed to the required value(purchOrderNo) to form the reference number)
+'========================================================================================================================
 
 Function setReferenceNumber(objControl, strValue)
 
@@ -1936,3 +2232,23 @@ Function setReferenceNumber(objControl, strValue)
 
 End Function
 
+'========================================================================================================================
+'	Function Name - getConfigurationValue
+'	Purpose - This function is used for configuring environment variables whch are constant during the test run.
+'========================================================================================================================
+
+Function getConfigurationValue()
+	
+	getAUTRootFolder = Pathfinder.locate("..\..\")
+	Envvarpath = getAUTRootFolder & "Data\Environment.xml"
+	organizerPath = getAUTRootFolder & "Organizer\Organizer_New.xls"
+	ScreenshotFolderPath = getAUTRootFolder & "Evidences"
+	Environment.LoadFromFile(Envvarpath)
+	url = environment.Value("URL")
+	sapUsername = environment.Value("SAPUsername")
+	sapPassword = environment.Value("SAPPassword")
+	almUsername = environment.Value("ALMUsername")
+	almPassword = environment.Value("ALMPassword")
+	
+	
+End Function
