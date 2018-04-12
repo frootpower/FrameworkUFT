@@ -1,6 +1,6 @@
 
 'Variable Initialization and Declaration
-Dim getAUTRootFolder, envVarpath, organizerPath, url, sapUsername, sapPassword, almUsername, almPassword, sExcelLocation, ScreenshotFolderPath, almDomain, almProject		'Configuration Variables
+Dim getAUTRootFolder, envVarpath, organizerPath, url, sapServerName, sapClient, sapUsername, sapPassword, almServerPath, almUsername, almPassword, almDomainName, almProjectName, sExcelLocation, ScreenshotFolderPath		'Configuration Variables
 Dim sParent, sParentProp, arrParent, current_parent, arrParentProp, sControl, sControlProp, arrControlProp, sAction, sDataValue, restart, theRun, arrData, arrNum
 Dim obj_hierarchy, control_object
 Dim objhierarchyArr()
@@ -555,9 +555,12 @@ Function fnAction()
 				Case "Maximize"		
 						fnMaximize(control_object)
 						
+				'Case "LaunchSAPLogon"
+				'		arrData = dataProvider(sDataValue)
+				'		launchSAPLogon(arrData)
+				
 				Case "LaunchSAPLogon"
-						arrData = dataProvider(sDataValue)
-						launchSAPLogon(arrData)
+						Call launchSAPLogon(sapServerName, sapClient, sapUsername, sapPassword)
 				
 				'Modified by KRISHAN - 26/12		
 				Case "CloseSAPConnection"
@@ -1732,22 +1735,19 @@ End Function
 
 '========================================
 '	Function Name - launchSAPLogon
-'	Purpose - This function launches SAP GUI client
-'	Argument1 - arrData(An array consisting of servername, Username and password to log into)
+'	Purpose - This function launches SAP GUI cient
+'	Argument1 - SAP Servername
+'	Argument2 - SAP Client
+'	Argument3 - SAP Username
+'	Argument4 - SAP Password
 '========================================
 
-Function launchSAPLogon(arrData)
+Function launchSAPLogon(Servername, Client, Username, Password)
 	
-	Dim Servername,Client,Username,Password,Language
-	Servername = arrData(0)
-	Client = 900
-	Username = arrData(1)
-	Password = arrData(2)
-	Language = "EN"
-	
-	Call SAPGuiUtil.AutoLogon(Servername, Client, Username, Password, Language)
+	Call SAPGuiUtil.AutoLogon(Servername, Client, Username, Password, "EN")
 	
 End Function
+
 'krishan 03/01
 Function fetchConsignmentNumber(objControl, strValue)
 	
@@ -2245,10 +2245,15 @@ Function getConfigurationValue()
 	ScreenshotFolderPath = getAUTRootFolder & "Evidences"
 	Environment.LoadFromFile(Envvarpath)
 	url = environment.Value("URL")
+	sapServerName = environment.Value("SAPServerName")
+	sapClient = environment.Value("SAPClient")
 	sapUsername = environment.Value("SAPUsername")
 	sapPassword = environment.Value("SAPPassword")
+	almServerPath = environment.Value("ALMServerPath")
 	almUsername = environment.Value("ALMUsername")
 	almPassword = environment.Value("ALMPassword")
-	
+	almDomainName = environment.Value("ALMDomainName")
+	almProjectName = environment.Value("ALMProjectName")
 	
 End Function
+
