@@ -666,7 +666,7 @@ Function fnAction()
 								Call execute_step(control_object,Test_Step, testStepStatusFlag, actualResult)		
 						Else		
 								Call execute_step(control_object(0),Test_Step, testStepStatusFlag, actualResult)
-
+						End If
 				Case "SendKeys"
 						'This function uses SendKeys method to select value from the Menu
 						Set WshShell = CreateObject("WScript.Shell")
@@ -1913,7 +1913,6 @@ Function verifyIsEmpty(strValue)
             actualResult = "Baseline Date = " & baselineDate
             verifyIsEmpty = 1
         End If
-    End If
     
     ElseIf strValue = "Payment Terms" Then
         If IsEmpty(pmntTerms) Then
