@@ -1363,8 +1363,13 @@ End Function
 '	Purpose - This function retuns an array consisting of the data values from the "Data" column in excel separated by comma.  
 '=============================================================================
 
-Function dataProvider
-	arrData = Split(sDataValue, ",")
+'Function dataProvider
+'	arrData = Split(sDataValue, ",")
+'	dataprovider = arrData
+'End Function
+
+Function dataProvider(strValue)
+	arrData = Split(strValue, ",")
 	dataprovider = arrData
 End Function
 
