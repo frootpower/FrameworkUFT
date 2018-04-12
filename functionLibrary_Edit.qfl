@@ -101,9 +101,13 @@ Function exec_HP_ALM (Path, CY_CYCLE,Test_Case_ID)
 
 Dim gTDConn
 Set gTDConn = CreateObject("TDApiOle80.TDConnection")
-gTDConn.InitConnectionEx "http://10.50.112.78:8080/qcbin"
-gTDConn.Login "kbansal", "Stryker2025"
-gTDConn.Connect "Stryker", "Accelerate"
+'gTDConn.InitConnectionEx "http://10.50.112.78:8080/qcbin"
+'gTDConn.Login "kbansal", "Stryker2025"
+'gTDConn.Connect "Stryker", "Accelerate"
+
+Call gTDConn.InitConnectionEx(almServerPath)
+Call gTDConn.Login(almUsername,almPassword)
+Call gTDConn.Connect(almDomainName,almProjectName)
 
 testCaseStatusFlag = 1
 
