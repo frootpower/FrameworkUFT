@@ -515,12 +515,12 @@ Function fnAction()
 							Call setValueDynamic(control_object(0), arrData)
 						End If
 
-'				Case "Click"
-'						If InStr(sParent, "SAP") <> 0 OR InStr(sParent, "Window") <> 0 Then
-'							fnClick(control_object,sDataValue)
-'						Else
-'							fnClick(control_object(0),sDataValue)
-'						End If
+				Case "Click"
+						If InStr(sParent, "SAP") <> 0 OR InStr(sParent, "Window") <> 0 Then
+							Call fnClick(control_object,sDataValue)
+						Else
+							Call fnClick(control_object(0),sDataValue)
+						End If
 
 			'Keshub
 			
