@@ -1,0 +1,58 @@
+<Environment>
+	<Variable>
+		<Name>Browser</Name>
+		<Value><![CDATA[Google Chrome]]></Value>
+	</Variable>
+	<Variable>
+		<Name>SAPS4</Name>
+		<Value><![CDATA[ECU - N+1 Test]]></Value>
+	</Variable>
+	<Variable>
+		<Name>SAPEWM</Name>
+		<Value><![CDATA[EMU - N+1 Test]]></Value>
+	</Variable>
+	<Variable>
+		<Name>SAPClient</Name>
+		<Value><![CDATA[900]]></Value>
+	</Variable>
+	<Variable>
+		<Name>SAPUsername</Name>
+		<Value><![CDATA[TBR_2TSTSC01]]></Value>
+	</Variable>
+	<Variable>
+		<Name>SAPPassword</Name>
+		<Value><![CDATA[Testing!1]]></Value>
+	</Variable>
+	<Variable>
+		<Name>FioriURL</Name>
+		<Value><![CDATA[https://sapfioritst.strykercorp.com/sap/bc/ui5_ui5/ui2/ushell/shells/abap/FioriLaunchpad.html]]></Value>
+	</Variable>
+	<Variable>
+		<Name>FioriN+1URL</Name>
+		<Value><![CDATA[https://sapfiuci.strykercorp.com:8200/sap/bc/ui2/flp?sap-client=900&sap-language=EN#Shell-home]]></Value>
+	</Variable>
+	<Variable>
+		<Name>OrganizerPath</Name>
+		<Value><![CDATA[C:\Users\keshubm\WORK\UFT\Automation Framework\Final Automation Framework2\Project_Framework_V1\Organizer\Organizer_New.xls]]></Value>
+	</Variable>
+	<Variable>
+		<Name>ALMUsername</Name>
+		<Value><![CDATA[keshubm]]></Value>
+	</Variable>
+	<Variable>
+		<Name>ALMPassword</Name>
+		<Value><![CDATA[#1IMTGZB]]></Value>
+	</Variable>
+	<Variable>
+		<Name>ALMServerPath</Name>
+		<Value><![CDATA[http://10.50.112.98:8080/qcbin]]></Value>
+	</Variable>
+	<Variable>
+		<Name>ALMDomainName</Name>
+		<Value><![CDATA[Stryker]]></Value>
+	</Variable>
+	<Variable>
+		<Name>ALMProjectName</Name>
+		<Value><![CDATA[Accelerate]]></Value>
+	</Variable>
+</Environment>
