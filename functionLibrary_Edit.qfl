@@ -2,12 +2,12 @@
 'Variable Initialization and Declaration
 Dim getAUTRootFolder, envVarpath, organizerPath, url, sapServerName, sapClient, sapUsername, sapPassword, almServerPath, almUsername, almPassword, almDomainName, almProjectName, sExcelLocation, ScreenshotFolderPath		'Configuration Variables
 Dim sParent, sParentProp, arrParent, current_parent, arrParentProp, sControl, sControlProp, arrControlProp, sAction, sDataValue, restart, theRun, arrData, arrNum
-Dim obj_hierarchy, control_object
+Dim obj_hierarchy, prev_obj_hierarchy, control_object
 Dim objhierarchyArr()
 Dim objhierarchypropArr()
 Dim browserObject
 'Dim testStepStatusFlag
-Dim testStepStatusFlag, testCaseStatusFlag
+Dim testStepStatusFlag, testCaseStatusFlag, notCompletedFlag
 Dim arrNumbers()
 Dim allBatchesArr(), batchCount, batchFlag, changeBatchval
 Dim sendStepStatustoALM
@@ -36,7 +36,7 @@ Dim woNumber
 Dim inbDeliveryOrder
 Dim woInboundNumber
 Dim spoolNoStr, spoolNoArr, spoolNo
-Dim giStatus
+Dim giStatus, grStatus
 
 '******PTP Variable Declaration
 Dim numberArr
@@ -212,6 +212,11 @@ fileName = createFilenameTimeStamp(ScreenshotFolderPath)
 Dim attachFactory 'As AttachmentFactory
 Set attachFactory = runStep2.Attachments
 Set attachment = attachFactory.AddItem (Null)
+
+If NOT(waitforElementTimeOut(objControl,5)) Then
+	Set objControl = prev_obj_hierarchy
+End If
+
 objControl.CaptureBitmap fileName,True
 attachment.FileName = fileName
 'attachment.Type = TDATT_FILE
@@ -230,8 +235,8 @@ Else
 	If testCaseStatusFlag=0 Then		
 		Call setTestStatus(theRun, testCaseStatusFlag)		
 	ElseIf testCaseStatusFlag=1 Then		
-		testCaseStatusFlag=2		
-		Call setTestStatus(theRun, testCaseStatusFlag)
+		notCompletedFlag=2		
+		Call setTestStatus(theRun, notCompletedFlag)
 	End If	
 End If
 
@@ -243,7 +248,7 @@ End Function
 '	Purpose - This function updates the overall test case status as "Passed" or "Failed". 
 '				
 '	Argument1 - theRun
-'	Argument2 - testStepStatusFlag(1 = Passed, 0 = Failed, 2 = Not Completed)
+'	Argument2 - testCaseStatusFlag(1 = Passed, 0 = Failed, 2 = Not Completed)
 '========================================
 
 Function setTestStatus(theRun, testCaseStatusFlag)
@@ -450,6 +455,11 @@ Function fnIdentifyControl()
 				'Control Object is the parent hierarchy on which the action will be performed (refer NOTE 1 from the article)
 				Set control_object = obj_hierarchy
 		End If
+		
+		If (testStepStatusFlag =1 and waitforElementTimeOut(control_object,20)) Then
+			Set prev_control_object = control_object
+		End If
+		
 
 		'Call the function that will perform the necessary action on the object
 		fnAction()		
@@ -500,7 +510,7 @@ Function fnAction()
 						Call Select_Required_Requisition(control_object(0), arrData)
 
 				Case "GetValue"
-                        			arrData = dataProvider(sDataValue)
+                        arrData = dataProvider(sDataValue)
 						If InStr(sParent, "SAP") <> 0 OR InStr(sParent, "Window") Then
 							Call getValue(control_object,arrData)
 						Else
@@ -564,7 +574,7 @@ Function fnAction()
 				'		launchSAPLogon(arrData)
 				
 				Case "LaunchSAPLogon"
-						Call launchSAPLogon(sapServerName, sapClient, sapUsername, sapPassword)
+        Call launchSAPLogon(sDataValue, sapClient, sapUsername, sapPassword)
 				
 				'Modified by KRISHAN - 26/12		
 				Case "CloseSAPConnection"
@@ -644,9 +654,9 @@ Function fnAction()
 						Call getSTatusBartext(control_object, sDataValue)
 						
 			
-                         	Case "GetTextFromTree"
-                				arrData = dataProvider(sDataValue)
-                        			Call gettextfromMultiColumnTree(control_object, arrData)
+                 Case "GetTextFromTree"
+                		arrData = dataProvider(sDataValue)
+                        Call gettextfromMultiColumnTree(control_object, arrData)
 		
 				Case "exec_HP_ALM"
 				
@@ -671,6 +681,7 @@ Function fnAction()
 						Else		
 								Call execute_step(control_object(0),Test_Step, testStepStatusFlag, actualResult)
 						End If
+            
 				Case "SendKeys"
 						'This function uses SendKeys method to select value from the Menu
 						Set WshShell = CreateObject("WScript.Shell")
@@ -690,7 +701,7 @@ Function fnAction()
 				Case "DoubleClick"		
 						doubleClick(control_object(0))
 						
-				End Select
+		End Select
 				
 				
 				
@@ -980,6 +991,8 @@ Function getValue(objControl, arrData)
                 'msgbox spoolNo    
 			ElseIf itemnametofetch = "GI Status" Then
                 giStatus = ExtractedValue
+            ElseIf itemnametofetch = "GR Status" Then
+                grStatus = ExtractedValue
             ElseIf itemnametofetch = "Plant No" Then
 				plantNumber = ExtractedValue
             ElseIf itemnametofetch = "ProductNo" Then
@@ -1669,6 +1682,10 @@ Function fnIdentifySAPParentHierarchy()
 						Set obj_hierarchy = Window(arrParentProp(0))
 	
 		End Select
+		
+		If (waitforElementTimeOut(obj_hierarchy,5)) Then
+			Set prev_obj_hierarchy = obj_hierarchy
+		End If
 
 		'Call the function that will resolve the Control Object
 		fnIdentifySAPControl()
@@ -1723,7 +1740,11 @@ Function fnIdentifySAPControl()
 				'Control Object is the parent hierarchy on which the action will be performed (refer NOTE 1 from the article)
 				Set control_object = obj_hierarchy
 		End If
-
+		
+'		If (waitforElementTimeOut(control_object,20)) Then
+'			Set prev_control_object = control_object
+'		End If
+		
 		'Call the function that will perform the necessary action on the object
 		fnAction()		
 
@@ -1747,9 +1768,16 @@ End Function
 '	Argument4 - SAP Password
 '========================================
 
-Function launchSAPLogon(Servername, Client, Username, Password)
-	
-	Call SAPGuiUtil.AutoLogon(Servername, Client, Username, Password, "EN")
+Function launchSAPLogon(strValue, Client, Username, Password)
+
+'	If strValue = "SAP S4" Then
+'		sapServerName = environment.Value("SAPS4")
+'	ElseIf strValue = "SAP EWM" Then
+'		sapServerName = environment.Value("SAPEWM")
+'	End If
+
+	sapServerName = environment.Value(strValue)
+	Call SAPGuiUtil.AutoLogon(sapServerName, Client, Username, Password, "EN")
 	
 End Function
 
@@ -1977,6 +2005,14 @@ Function valueComparator(arrData)
         Else
             valueComparator = 0
         End If
+    ElseIf variableName = "GR Status" Then
+        actualResult = "Goods Receipt Status = " & grStatus
+        
+        If grStatus = expectedStr Then
+            valueComparator = 1
+        Else
+            valueComparator = 0
+        End If
     ElseIf variableName = "Doc Overview Status" Then
         actualResult = "Goods Issue Status = " & docOverviewStatus
         
@@ -2099,18 +2135,21 @@ Function updateValue(strValue)
 		If IsNumeric(stockOverviewItem) Then
         	updatedreceivedOnDockQty = CInt(stockOverviewItem)-1
         	msgbox updatedreceivedOnDockQty
+        End If
 	
 	ElseIf (strValue = "Free Stock") Then
 	
 		If IsNumeric(stockOverviewItem) Then
         	updatedFreeStockQty = CInt(stockOverviewItem)+1
         	msgbox updatedFreeStockQty
+        End If
         
-    	ElseIf (strValue = "SYK Corp Allendale") Then
+    ElseIf (strValue = "SYK Corp Allendale") Then
 	
 		If IsNumeric(stockOverviewItem) Then
         	updatedSykCorpAllendaleQty = CLng(stockOverviewItem)-1
         	msgbox updatedSykCorpAllendaleQty
+        End If
         
 	End If
 	
@@ -2244,12 +2283,13 @@ End Function
 Function getConfigurationValue()
 	
 	getAUTRootFolder = Pathfinder.locate("..\..\")
+'	msgbox getAUTRootFolder
 	Envvarpath = getAUTRootFolder & "Data\Environment.xml"
 	organizerPath = getAUTRootFolder & "Organizer\Organizer_New.xls"
 	ScreenshotFolderPath = getAUTRootFolder & "Evidences"
 	Environment.LoadFromFile(Envvarpath)
 	url = environment.Value("URL")
-	sapServerName = environment.Value("SAPServerName")
+'	sapServerName = environment.Value("SAPServerName")
 	sapClient = environment.Value("SAPClient")
 	sapUsername = environment.Value("SAPUsername")
 	sapPassword = environment.Value("SAPPassword")
@@ -2260,4 +2300,6 @@ Function getConfigurationValue()
 	almProjectName = environment.Value("ALMProjectName")
 	
 End Function
+
+
 
