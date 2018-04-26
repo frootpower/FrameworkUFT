@@ -102,7 +102,7 @@ Function exec_HP_ALM (Path, CY_CYCLE,Test_Case_ID)
 Dim gTDConn
 Set gTDConn = CreateObject("TDApiOle80.TDConnection")
 'gTDConn.InitConnectionEx "http://10.50.112.78:8080/qcbin"
-'gTDConn.Login "kbansa", "Stryker2025"
+'gTDConn.Login "kbansal", "Stryker2025"
 'gTDConn.Connect "Stryker", "Accelerate"
 
 Call gTDConn.InitConnectionEx(almServerPath)
@@ -574,7 +574,7 @@ Function fnAction()
 				'		launchSAPLogon(arrData)
 				
 				Case "LaunchSAPLogon"
-						Call launchSAPLogon(sDataValue, sapClient, sapUsername, sapPassword)
+        Call launchSAPLogon(sDataValue, sapClient, sapUsername, sapPassword)
 				
 				'Modified by KRISHAN - 26/12		
 				Case "CloseSAPConnection"
@@ -681,7 +681,7 @@ Function fnAction()
 						Else		
 								Call execute_step(control_object(0),Test_Step, testStepStatusFlag, actualResult)
 						End If
-						
+            
 				Case "SendKeys"
 						'This function uses SendKeys method to select value from the Menu
 						Set WshShell = CreateObject("WScript.Shell")
@@ -2300,3 +2300,6 @@ Function getConfigurationValue()
 	almProjectName = environment.Value("ALMProjectName")
 	
 End Function
+
+
+
